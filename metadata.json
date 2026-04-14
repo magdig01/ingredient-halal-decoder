@@ -1,0 +1,5 @@
+{
+  "name": "Ingredient Decoder",
+  "description": "Analyze product ingredient labels to check if they are safe and healthy.",
+  "requestFramePermissions": ["camera"]
+}
