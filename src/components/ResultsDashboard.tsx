@@ -105,7 +105,9 @@ export function ResultsDashboard({ result, onReset, lang }: ResultsDashboardProp
               result.halalStatus === 'doubtful' ? 'bg-amber-200 text-amber-900' :
               'bg-rose-200 text-rose-900'
             }`}>
-              {result.halalStatus === 'halal' && <CheckCircle className="w-4 h-4" />}
+              {result.halalStatus === 'halal' && (
+                <div className="bg-emerald-700 text-white text-[10px] px-1.5 py-0.5 rounded leading-none">حلال</div>
+              )}
               {result.halalStatus === 'doubtful' && <HelpCircle className="w-4 h-4" />}
               {result.halalStatus === 'haram' && <XCircle className="w-4 h-4" />}
               {getHalalText(result.halalStatus)}
@@ -217,7 +219,12 @@ const IngredientCard: React.FC<{ ingredient: Ingredient }> = ({ ingredient }) =>
 
   const getHalalIcon = (status: string) => {
     switch (status) {
-      case 'halal': return <CheckCircle className="w-4 h-4 text-emerald-600" />;
+      case 'halal': 
+        return (
+          <div className="flex items-center justify-center bg-emerald-600 text-white text-[8px] font-bold px-1 rounded-sm h-4 min-w-[28px] leading-none" title="Halal">
+            حلال
+          </div>
+        );
       case 'doubtful': return <HelpCircle className="w-4 h-4 text-amber-500" />;
       case 'haram': return <XCircle className="w-4 h-4 text-rose-600" />;
       default: return null;
