@@ -60,27 +60,27 @@ export function ImageUploader({ onImageSelected, lang }: ImageUploaderProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className={`relative overflow-hidden rounded-3xl border-2 border-dashed transition-colors duration-300 ${
-          isDragging ? 'border-blue-500 bg-blue-50' : 'border-blue-200 bg-white hover:border-blue-400 hover:bg-blue-50/50'
+          isDragging ? 'border-emerald-500 bg-emerald-50' : 'border-emerald-200 bg-white hover:border-emerald-400 hover:bg-emerald-50/50'
         }`}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
       >
-        <div className="p-12 text-center flex flex-col items-center justify-center min-h-[300px]">
-          <div className="bg-blue-100 p-4 rounded-full mb-6">
-            <Upload className="w-8 h-8 text-blue-600" />
+        <div className="p-6 md:p-12 text-center flex flex-col items-center justify-center min-h-[250px] md:min-h-[300px]">
+          <div className="bg-emerald-100 p-3 md:p-4 rounded-full mb-4 md:mb-6">
+            <Upload className="w-6 h-6 md:w-8 md:h-8 text-emerald-600" />
           </div>
-          <h3 className="text-xl font-semibold text-blue-950 mb-2">
+          <h3 className="text-lg md:text-xl font-display font-semibold text-black mb-2">
             {t.uploadTitle}
           </h3>
-          <p className="text-blue-600/70 mb-8 max-w-sm">
+          <p className="text-sm md:text-base text-gray-600 mb-6 md:mb-8 max-w-sm">
             {t.uploadSubtitle}
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 w-full justify-center px-4 sm:px-0">
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium transition-colors shadow-sm shadow-blue-600/20"
+              className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3.5 rounded-xl font-medium transition-colors shadow-sm shadow-emerald-600/20 w-full sm:w-auto"
             >
               <ImageIcon className="w-5 h-5" />
               {t.chooseImage}
@@ -96,7 +96,7 @@ export function ImageUploader({ onImageSelected, lang }: ImageUploaderProps) {
                   }, 1000);
                 }
               }}
-              className="flex items-center justify-center gap-2 bg-white border border-blue-200 hover:border-blue-300 hover:bg-blue-50 text-blue-700 px-6 py-3 rounded-xl font-medium transition-colors"
+              className="flex items-center justify-center gap-2 bg-white border border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50 text-emerald-700 px-6 py-3.5 rounded-xl font-medium transition-colors w-full sm:w-auto"
             >
               <Camera className="w-5 h-5" />
               {t.takePhoto}
