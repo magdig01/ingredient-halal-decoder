@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2, Globe, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageUploader } from './components/ImageUploader';
@@ -7,6 +7,7 @@ import { HalalLogo } from './components/HalalLogo';
 import { LanguageToggle } from './components/LanguageToggle';
 import { analyzeLabel, type AnalysisResult } from './lib/gemini';
 import { translations, type Language } from './translations';
+import { History, Trash2, Clock, ChevronRight } from 'lucide-react';
 
 type AppState = 'upload' | 'analyzing' | 'results' | 'error';
 
@@ -15,15 +16,30 @@ interface ImageData {
   mimeType: string;
 }
 
+interface HistoryItem {
+  id: string;
+  timestamp: number;
+  result: AnalysisResult;
+  image?: ImageData;
+}
+
 export default function App() {
   const [appState, setAppState] = useState<AppState>('upload');
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [lang, setLang] = useState<Language>('en');
   const [lastImage, setLastImage] = useState<ImageData | null>(null);
-  const [activeTab, setActiveTab] = useState<'analyze' | 'guide'>('analyze');
+  const [activeTab, setActiveTab] = useState<'analyze' | 'guide' | 'history'>('analyze');
+  const [history, setHistory] = useState<HistoryItem[]>(() => {
+    const saved = localStorage.getItem('halal_scan_history');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   const t = translations[lang];
+
+  useEffect(() => {
+    localStorage.setItem('halal_scan_history', JSON.stringify(history));
+  }, [history]);
 
   const handleImageSelected = async (base64: string, mimeType: string, targetLang?: Language) => {
     const activeLang = targetLang || lang;
@@ -35,6 +51,16 @@ export default function App() {
       const analysis = await analyzeLabel(base64, mimeType, activeLang);
       setResult(analysis);
       setAppState('results');
+      
+      // Add to history
+      const newItem: HistoryItem = {
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        result: analysis,
+        image: { base64, mimeType }
+      };
+      
+      setHistory(prev => [newItem, ...prev].slice(0, 10));
     } catch (err: any) {
       setErrorMsg(err.message || 'An unexpected error occurred.');
       setAppState('error');
@@ -58,16 +84,28 @@ export default function App() {
     }
   };
 
+  const clearHistory = () => {
+    setHistory([]);
+  };
+
+  const viewHistoryItem = (item: HistoryItem) => {
+    setResult(item.result);
+    if (item.image) {
+      setLastImage(item.image);
+    }
+    setAppState('results');
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans text-black selection:bg-emerald-200">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-emerald-600 p-1.5 rounded-lg shadow-sm">
-              <HalalLogo className="w-6 h-6" />
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+        <div className="max-w-5xl mx-auto px-4 h-14 md:h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="bg-emerald-600 p-1.5 rounded-lg shadow-sm shadow-emerald-600/20">
+              <HalalLogo className="w-5 h-5 md:w-6 md:h-6" />
             </div>
-            <h1 className="text-xl font-display font-bold text-black tracking-tight">{t.title}</h1>
+            <h1 className="text-lg md:text-xl font-display font-bold text-black tracking-tight leading-none">{t.title}</h1>
           </div>
           <LanguageToggle currentLang={lang} onToggle={handleLanguageChange} />
         </div>
@@ -84,10 +122,10 @@ export default function App() {
               className="flex flex-col items-center"
             >
               {/* Tabs */}
-              <div className="flex bg-gray-100 p-1 rounded-xl mb-8 md:mb-12 w-full max-w-xs">
+              <div className="flex bg-gray-100/80 p-1 rounded-xl mb-8 md:mb-12 w-full max-w-[320px] md:max-w-sm">
                 <button
                   onClick={() => setActiveTab('analyze')}
-                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all ${
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 ${
                     activeTab === 'analyze' 
                       ? 'bg-white text-emerald-700 shadow-sm' 
                       : 'text-gray-500 hover:text-gray-700'
@@ -96,8 +134,18 @@ export default function App() {
                   {t.analyzeTab}
                 </button>
                 <button
+                  onClick={() => setActiveTab('history')}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 ${
+                    activeTab === 'history' 
+                      ? 'bg-white text-emerald-700 shadow-sm' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {t.historyTab}
+                </button>
+                <button
                   onClick={() => setActiveTab('guide')}
-                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all ${
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 ${
                     activeTab === 'guide' 
                       ? 'bg-white text-emerald-700 shadow-sm' 
                       : 'text-gray-500 hover:text-gray-700'
@@ -126,6 +174,84 @@ export default function App() {
                     </div>
                     
                     <ImageUploader onImageSelected={handleImageSelected} lang={lang} />
+                  </motion.div>
+                ) : activeTab === 'history' ? (
+                  <motion.div
+                    key="history-tab"
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.02 }}
+                    className="w-full max-w-2xl"
+                  >
+                    <div className="flex items-center justify-between mb-8">
+                      <h3 className="text-xl md:text-2xl font-display font-bold text-black flex items-center gap-2">
+                        <Clock className="w-6 h-6 text-emerald-600" />
+                        {t.historyTab}
+                      </h3>
+                      {history.length > 0 && (
+                        <button
+                          onClick={clearHistory}
+                          className="text-rose-600 hover:text-rose-700 text-sm font-medium flex items-center gap-1 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          {t.clearHistory}
+                        </button>
+                      )}
+                    </div>
+
+                    {history.length === 0 ? (
+                      <div className="bg-gray-50 border border-dashed border-gray-200 rounded-3xl p-12 text-center">
+                        <History className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                        <p className="text-gray-500 font-medium">{t.noHistory}</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {history.map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => viewHistoryItem(item)}
+                            className="w-full flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl hover:border-emerald-200 hover:shadow-sm transition-all text-left group"
+                          >
+                            <div className="w-16 h-16 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
+                              {item.image ? (
+                                <img 
+                                  src={item.image.base64} 
+                                  alt="Scan" 
+                                  className="w-full h-full object-cover"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Clock className="w-6 h-6 text-gray-300" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-black truncate mb-1">{item.result.summary}</h4>
+                              <div className="flex items-center gap-3 text-xs">
+                                <span className={`font-bold uppercase ${
+                                  item.result.halalStatus === 'halal' ? 'text-emerald-600' :
+                                  item.result.halalStatus === 'doubtful' ? 'text-amber-500' :
+                                  'text-rose-600'
+                                }`}>
+                                  {item.result.halalStatus}
+                                </span>
+                                <span className="text-gray-400">•</span>
+                                <span className="text-gray-500">
+                                  {new Date(item.timestamp).toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-emerald-500 transition-colors" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </motion.div>
                 ) : (
                   <motion.div
